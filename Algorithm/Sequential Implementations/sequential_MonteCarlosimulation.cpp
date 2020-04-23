@@ -2,6 +2,7 @@
 #include <random>
 #include <vector>
 #include <stack>
+#include <cmath>
 using namespace std;
 
 constexpr double PI = 3.14159265358979323846264338;
@@ -144,6 +145,37 @@ private:
 
 // ************************************************************************* //
 
+class Ellipse {
+public:
+    Ellipse(){}
+    Ellipse(Point p, Point q, Point r){
+        // Assuming d is handled
+        double d = p.x*p.x * q.y*q.y - q.x*q.x * p.y*p.y;
+        // If points are collinear with origin
+        if(d==0)
+        {
+            Point temp = p;
+            p = r;
+            r = temp;
+        }
+        A = (q.y*q.y - p.y*p.y)/d;
+        B = (p.x*p.x - q.x*q.x)/d;
+    }
+    // Function to check whether point is in ellipse or not
+    bool is_interior(Point p){
+        return A*p.x*p.x + B*p.y*p.y <= 1;
+    }
+    // Analytical method to calculate area of the ellipse
+    double area(){
+        double area = PI * std::sqrt(1/A) * std::sqrt(1/B);
+        return area;
+    }
+private:
+    // Assuming ellipse to be of form Ax^2 + By^2 = 1
+    double A,B;
+};
+// ************************************************************************* //
+
 // A global point needed for sorting points with reference to the first point
 Point base;
 
@@ -236,11 +268,25 @@ std::vector<Point> convexHull(Point points[], int n){
 
 class MonteCarlo {
 public:
-    MonteCarlo(int n, unsigned seed=0) {
+    MonteCarlo(unsigned seed){
+        srand(seed);
+        const int mod = 1000;
+        // Point p = Point((double)(rand()%mod)/mod, (double)(rand()%mod)/mod);
+        // Point q = Point((double)(rand()%mod)/mod, (double)(rand()%mod)/mod);
+        // Point r = Point((double)(rand()%mod)/mod, (double)(rand()%mod)/mod);
+
+        Point p = Point((double)1, (double)0);
+        Point q = Point((double)0, (double)1);
+        Point r = Point((double)0, (double)-1);
+
+        ellipse = Ellipse(p,q,r);
+        anatical_area = ellipse.area();
+    }
+    MonteCarlo(int n, unsigned seed) {
         // static std::default_random_engine generator;
         // static std::uniform_real_distribution<double> dist(0, 1);
         srand(seed);
-        const int mod = 10.0;
+        const int mod = 100;
         Point points[1024];
         for(int i=0;i<n;i++){
             points[i] = Point((double)(rand()%mod)/mod,(double)(rand()%mod)/mod);
@@ -264,6 +310,25 @@ public:
 
         return 4.0 * count / samples;
     }
+    double run_ellipse_experiment(unsigned samples) {
+        static std::default_random_engine generator;
+        static std::uniform_real_distribution<double> dist(0, 1);
+        unsigned hit_count = 0;
+
+        for (int i = 0; i < samples; i++) {
+            Point sample = random_generator.get_random_point();
+            if(ellipse.is_interior(sample))
+                hit_count++;
+        }
+
+        this->hit_count += hit_count;
+        this->total_samples += samples;
+        double calulated_area = 4.0 * calulate_area();
+        std::cout<<"Actual area of polygon: "<<ellipse.area()<<'\n';
+        std::cout<<"After "<<total_samples<<" samples estimated area is: "<<calulated_area<<'\n';
+        std::cout<<"Percentage error: "<<percent_error(calulated_area)<<"%\n";
+        return calulated_area;
+    }
     double run_experiment(unsigned samples) {
         static std::default_random_engine generator;
         static std::uniform_real_distribution<double> dist(0, 1);
@@ -285,6 +350,7 @@ public:
     }
 private:
     Polygon shape;
+    Ellipse ellipse;
     double anatical_area;
     unsigned int hit_count = 0;
     unsigned int total_samples = 0;
@@ -306,25 +372,29 @@ private:
 
 int main()
 {
-    int a,b,c,d;
+    // int a,b,c,d;
     unsigned samples, points, seed=0;
 
-    std::cout << "Enter a number of vertices to be used: ";
-    std::cin>> points;
+    // std::cout << "Enter a number of vertices to be used: ";
+    // std::cin>> points;
     std::cout << "Enter a random number for seed: ";
     std::cin>> seed;
+    //
+    // MonteCarlo monte_carlo(points,seed);
+    //
+    // std::cout << "Enter samples to use: ";
+    // std::cin >> samples;
+    //
+    // double pi_estimate = monte_carlo.monte_carlo_pi(samples);
+    // std::cout << "Pi = " << pi_estimate << '\n';
+    // std::cout << "Percent error is: " << 100 * std::abs(pi_estimate - PI) / PI << " %\n";
+    //
+    // monte_carlo.run_experiment(samples);
 
-    MonteCarlo monte_carlo(points,seed);
-
+    MonteCarlo ellipse_monte_carlo(seed);
     std::cout << "Enter samples to use: ";
     std::cin >> samples;
-
-    double pi_estimate = monte_carlo.monte_carlo_pi(samples);
-    std::cout << "Pi = " << pi_estimate << '\n';
-    std::cout << "Percent error is: " << 100 * std::abs(pi_estimate - PI) / PI << " %\n";
-
-    monte_carlo.run_experiment(samples);
-
+    ellipse_monte_carlo.run_ellipse_experiment(samples);
 
     return 0;
 }
