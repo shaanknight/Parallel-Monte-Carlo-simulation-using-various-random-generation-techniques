@@ -6,15 +6,15 @@
 #include <algorithm>
 using namespace std;
 
-typedef long long ll;
+typedef unsigned long long ll;
 typedef double db;
 
 vector<db> randomgen_LEMRG(ll n, vector<ll> seed)
 {
     ll a12 = 1403580;
-    ll a13 = 810728;
+    ll a13 = (1ll << 32) - 209 - 810728;
     ll a21 = 527612;
-    ll a23 = 1370589;
+    ll a23 = (1ll << 32) - 22853 - 1370589;
     ll m1 = (1ll << 32) - 209;
     ll m2 = (1ll << 32) - 22853;
     static vector<ll> y1(n), y2(n);
@@ -26,8 +26,8 @@ vector<db> randomgen_LEMRG(ll n, vector<ll> seed)
         rnd_seq[i] = (db)( ( y1[i] + y2[i]) % m1 ) / (db)(m1-1.0);
     }
     for (ll i = 3; i < n; i++){
-        y1[i] = ( (a12 * y1[i-2])%m1 - (a13 * y1[i-3])%m1 + m1) % m1;
-        y2[i] = ( (a21 * y2[i-1])%m2 - (a23 * y2[i-3])%m2 + m2) % m2;
+        y1[i] = ( (a12 * y1[i-2])%m1 + (a13 * y1[i-3])%m1) % m1;
+        y2[i] = ( (a21 * y2[i-1])%m2 + (a23 * y2[i-3])%m2) % m2;
         rnd_seq[i] = (db)( ( y1[i] + y2[i]) % m1 ) / (db)(m1-1.0);
     }
     return rnd_seq;
@@ -49,7 +49,7 @@ vector<ll> multiply(vector<vector<ll> > pre,vector<ll> base,ll m,ll mod)
                 tmp[i] = 0;
             for(i=0;i<N;++i)
                 for(j=0;j<N;++j)
-                    tmp[i] = (tmp[i] + pre[i][j]*base[j])%mod; 
+                    tmp[i] = (tmp[i] + 1ll*pre[i][j]*base[j]%mod)%mod; 
             for(i=0;i<N;++i)
                 base[i] = tmp[i];
         }
@@ -59,14 +59,7 @@ vector<ll> multiply(vector<vector<ll> > pre,vector<ll> base,ll m,ll mod)
         for(i=0;i<N;++i)
             for(j=0;j<N;++j)
                 for(k=0;k<N;++k)
-                {
-                    if(pre[k][j] < 0 && pre[i][k] > 0)
-                        red[i][j] = (red[i][j] - (pre[i][k]*(-1*pre[k][j]))%mod + mod)%mod;
-                    else if(pre[i][k] < 0 && pre[k][j] > 0)
-                        red[i][j] = (red[i][j] - (pre[k][j]*(-1*pre[i][k]))%mod + mod)%mod;
-                    else
-                        red[i][j] = (red[i][j] + 1ll*pre[i][k]*pre[k][j]%mod)%mod;
-                }
+                    red[i][j] = (red[i][j] + 1ll*pre[i][k]*pre[k][j]%mod)%mod;
         for(i=0;i<N;++i)
             for(j=0;j<N;++j)
                 pre[i][j] = red[i][j];
@@ -87,9 +80,9 @@ vector<T> s(vector<T> const &v, int m, int n)
 vector<ll> seedgen_Lecuyer(ll rank,ll iters,vector<ll> seed)
 {
     ll a12 = 1403580;
-    ll a13 = -810728;
+    ll a13 = (1ll << 32) - 209 - 810728;
     ll a21 = 527612;
-    ll a23 = -1370589;
+    ll a23 = (1ll << 32) - 22853 - 1370589;
     ll m1 = (1ll << 32) - 209;
     ll m2 = (1ll << 32) - 22853;
     vector<ll> seed1 = s(seed,0,2);
@@ -137,6 +130,6 @@ int main(){
     for (int i = 0; i < 6; i++)
         seed[i] = 12345;
     uniformity(randomgen_LEMRG(10000000,seed));
-    // trace(randomgen_LEMRG(7,seed));
-    // traceall(seedgen_Lecuyer(1,6,seed));
+    // trace(randomgen_LEMRG(100,seed));
+    // traceall(seedgen_Lecuyer(1,99,seed));
 }
